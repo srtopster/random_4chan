@@ -8,10 +8,17 @@ import mpv
 import PySimpleGUI as sg
 from PIL import Image
 
-data = {"image":None,"thread":None,"filename":None}
+#Choose your board list
+#Default all boards
 boards = ['3', 'a', 'aco', 'adv', 'an', 'b', 'bant', 'biz', 'c', 'cgl', 'ck', 'cm', 'co', 'd', 'diy', 'e', 'fa', 'fit', 'g', 'gd', 'gif', 'h', 'hc', 'his', 'hm', 'hr', 'i', 'ic', 'int', 'jp', 'k', 'lgbt', 'lit', 'm', 'mlp', 'mu', 'n', 'news', 'o', 'out', 'p', 'po', 'pol', 'pw', 'qa', 'qst', 'r', 'r9k', 's', 's4s', 'sci', 'soc', 'sp', 't', 'tg', 'toy', 'trash', 'trv', 'tv', 'u', 'v', 'vg', 'vip', 'vm', 'vmg', 'vp', 'vr', 'vrpg', 'vst', 'vt', 'w', 'wg', 'wsg', 'wsr', 'x', 'xs', 'y']
-#worksafe board list:
+#Not gay board list 
+#boards = ['3', 'a', 'aco', 'adv', 'an', 'b', 'bant', 'biz', 'c', 'cgl', 'ck', 'co', 'd', 'diy', 'e', 'fa', 'fit', 'g', 'gd', 'gif', 'h', 'hc', 'his', 'hr', 'i', 'ic', 'int', 'jp', 'k', 'lgbt', 'lit', 'm', 'mlp', 'mu', 'n', 'news', 'o', 'out', 'p', 'po', 'pol', 'pw', 'qa', 'qst', 'r', 'r9k', 's', 's4s', 'sci', 'soc', 'sp', 't', 'tg', 'toy', 'trash', 'trv', 'tv', 'u', 'v', 'vg', 'vip', 'vm', 'vmg', 'vp', 'vr', 'vrpg', 'vst', 'vt', 'w', 'wg', 'wsg', 'wsr', 'x', 'xs']
+#Gif/webm only board list
+#boards = ["wsg","gif"]
+#SFW board list:
 #boards = ['3', 'a', 'adv', 'an', 'biz', 'c', 'cgl', 'ck', 'cm', 'co', 'diy', 'fa', 'fit', 'g', 'gd', 'his', 'int', 'jp', 'k', 'lgbt', 'lit', 'm', 'mlp', 'mu', 'n', 'news', 'o', 'out', 'p', 'po', 'pw', 'qa', 'qst', 'sci', 'sp', 'tg', 'toy', 'trv', 'tv', 'v', 'vg', 'vip', 'vm', 'vmg', 'vp', 'vr', 'vrpg', 'vst', 'vt', 'w', 'wsg', 'wsr', 'x', 'xs', 'y']
+
+data = {"image":None,"thread":None,"filename":None}
 
 def webm_handler(file_bytes):
     global player
@@ -19,6 +26,17 @@ def webm_handler(file_bytes):
         f.write(file_bytes)
     player = mpv.MPV(wid=window['img_gui'].Widget.winfo_id())
     player.loop_playlist = 'inf'
+    @player.property_observer('duration')
+    def func_dur(_name, value):
+        global duration
+        if value != None:
+            duration = value
+    @player.property_observer('time-pos')
+    def func_pos(_name, value):
+        if value != None:
+            m,s = divmod(int(value),60)
+            tm,ts = divmod(int(duration),60)
+            window["time"].update("{}:{:02d}/{}:{:02d}".format(m,s,tm,ts))
     player.play(".data")
 
 def image_handler(file_bytes):
@@ -31,11 +49,11 @@ def image_handler(file_bytes):
 def get_random():
     if "player" in globals():
         player.terminate()
-
+        window["time"].update("0:00/0:00")
     imgs = []
     board = random.choice(boards)
     window["img_gui"].update(filename="standby.png")
-    window["saved"].update(visible=False)
+    window["saved"].update("")
     r = requests.get("https://a.4cdn.org/{}/threads.json".format(board)).json()
     random_page = r[random.randrange(0,len(r))]["threads"]
     thread = random_page[random.randrange(0,len(random_page))]["no"]
@@ -72,7 +90,7 @@ def get_random():
 sg.theme("DarkGrey10")
 layout = [
     [sg.Image(size=(1024,576),key="img_gui")],
-    [sg.Button("Get Random",key="get",bind_return_key=True),sg.Input(visible=False,enable_events=True,key="save_path"),sg.FolderBrowse("Save",disabled=True,key="folder",initial_folder=os.getcwd()),sg.ProgressBar(max_value=10,size=(5,10),key="prog",bar_color=("green","grey")),sg.Text("Thread:"),sg.Text("unknown",key="thread_gui",size=(35,1),enable_events=True,text_color="white"),sg.Text("Saved!",key="saved",size=(6,1),text_color="lightgreen",visible=False)]
+    [sg.Button("Get Random",key="get",bind_return_key=True),sg.Input(visible=False,enable_events=True,key="save_path"),sg.FolderBrowse("Save",disabled=True,key="folder",initial_folder=os.getcwd()),sg.ProgressBar(max_value=10,size=(5,10),key="prog",bar_color=("green","grey")),sg.Text("Thread:",size=(5,None)),sg.Text("unknown",key="thread_gui",size=(36,None),enable_events=True,text_color="white"),sg.Text("0:00/0:00",size=(9,None),key="time"),sg.Text("",key="saved",size=(6,None),text_color="lightgreen")]
 ]
 
 window = sg.Window("4chan Random",layout=layout,finalize=True)
@@ -92,4 +110,4 @@ while True:
         with open(os.path.join(values["save_path"],data["filename"]),"wb") as f:
             f.write(data["image"])
             f.close()
-        window["saved"].update(visible=True)
+        window["saved"].update("Saved!")
