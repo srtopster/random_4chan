@@ -5,16 +5,18 @@ import os
 import threading
 import webbrowser
 import mpv
+import time
+import keyboard
 import PySimpleGUI as sg
 from PIL import Image
 
 #Choose your board list
 #Default all boards
-boards = ['3', 'a', 'aco', 'adv', 'an', 'b', 'bant', 'biz', 'c', 'cgl', 'ck', 'cm', 'co', 'd', 'diy', 'e', 'fa', 'fit', 'g', 'gd', 'gif', 'h', 'hc', 'his', 'hm', 'hr', 'i', 'ic', 'int', 'jp', 'k', 'lgbt', 'lit', 'm', 'mlp', 'mu', 'n', 'news', 'o', 'out', 'p', 'po', 'pol', 'pw', 'qa', 'qst', 'r', 'r9k', 's', 's4s', 'sci', 'soc', 'sp', 't', 'tg', 'toy', 'trash', 'trv', 'tv', 'u', 'v', 'vg', 'vip', 'vm', 'vmg', 'vp', 'vr', 'vrpg', 'vst', 'vt', 'w', 'wg', 'wsg', 'wsr', 'x', 'xs', 'y']
+#boards = ['3', 'a', 'aco', 'adv', 'an', 'b', 'bant', 'biz', 'c', 'cgl', 'ck', 'cm', 'co', 'd', 'diy', 'e', 'fa', 'fit', 'g', 'gd', 'gif', 'h', 'hc', 'his', 'hm', 'hr', 'i', 'ic', 'int', 'jp', 'k', 'lgbt', 'lit', 'm', 'mlp', 'mu', 'n', 'news', 'o', 'out', 'p', 'po', 'pol', 'pw', 'qa', 'qst', 'r', 'r9k', 's', 's4s', 'sci', 'soc', 'sp', 't', 'tg', 'toy', 'trash', 'trv', 'tv', 'u', 'v', 'vg', 'vip', 'vm', 'vmg', 'vp', 'vr', 'vrpg', 'vst', 'vt', 'w', 'wg', 'wsg', 'wsr', 'x', 'xs', 'y']
 #Not gay board list 
-#boards = ['3', 'a', 'aco', 'adv', 'an', 'b', 'bant', 'biz', 'c', 'cgl', 'ck', 'co', 'd', 'diy', 'e', 'fa', 'fit', 'g', 'gd', 'gif', 'h', 'hc', 'his', 'hr', 'i', 'ic', 'int', 'jp', 'k', 'lgbt', 'lit', 'm', 'mlp', 'mu', 'n', 'news', 'o', 'out', 'p', 'po', 'pol', 'pw', 'qa', 'qst', 'r', 'r9k', 's', 's4s', 'sci', 'soc', 'sp', 't', 'tg', 'toy', 'trash', 'trv', 'tv', 'u', 'v', 'vg', 'vip', 'vm', 'vmg', 'vp', 'vr', 'vrpg', 'vst', 'vt', 'w', 'wg', 'wsg', 'wsr', 'x', 'xs']
+#boards = ["cm",'3', 'a', 'aco', 'adv', 'an', 'b', 'bant', 'biz', 'c', 'cgl', 'ck', 'co', 'd', 'diy', 'e', 'fa', 'fit', 'g', 'gd', 'gif', 'h', 'hc', 'his', 'hr', 'i', 'ic', 'int', 'jp', 'k', 'lgbt', 'lit', 'm', 'mlp', 'mu', 'n', 'news', 'o', 'out', 'p', 'po', 'pol', 'pw', 'qa', 'qst', 'r', 'r9k', 's', 's4s', 'sci', 'soc', 'sp', 't', 'tg', 'toy', 'trash', 'trv', 'tv', 'u', 'v', 'vg', 'vip', 'vm', 'vmg', 'vp', 'vr', 'vrpg', 'vst', 'vt', 'w', 'wg', 'wsg', 'wsr', 'x', 'xs']
 #Gif/webm only board list
-#boards = ["wsg","gif"]
+boards = ["wsg","gif"]
 #SFW board list:
 #boards = ['3', 'a', 'adv', 'an', 'biz', 'c', 'cgl', 'ck', 'cm', 'co', 'diy', 'fa', 'fit', 'g', 'gd', 'his', 'int', 'jp', 'k', 'lgbt', 'lit', 'm', 'mlp', 'mu', 'n', 'news', 'o', 'out', 'p', 'po', 'pw', 'qa', 'qst', 'sci', 'sp', 'tg', 'toy', 'trv', 'tv', 'v', 'vg', 'vip', 'vm', 'vmg', 'vp', 'vr', 'vrpg', 'vst', 'vt', 'w', 'wsg', 'wsr', 'x', 'xs', 'y']
 
@@ -26,16 +28,11 @@ def webm_handler(file_bytes):
         f.write(file_bytes)
     player = mpv.MPV(wid=window['img_gui'].Widget.winfo_id())
     player.loop_playlist = 'inf'
-    @player.property_observer('duration')
-    def func_dur(_name, value):
-        global duration
-        if value != None:
-            duration = value
     @player.property_observer('time-pos')
     def func_pos(_name, value):
         if value != None:
             m,s = divmod(int(value),60)
-            tm,ts = divmod(int(duration),60)
+            tm,ts = divmod(int(player.duration),60)
             window["time"].update("{}:{:02d}/{}:{:02d}".format(m,s,tm,ts))
     player.play(".data")
 
@@ -89,7 +86,7 @@ def get_random():
 
 sg.theme("DarkGrey10")
 layout = [
-    [sg.Image(size=(1024,576),key="img_gui")],
+    [sg.Image(size=(1024,576),key="img_gui",enable_events=True)],
     [sg.Button("Get Random",key="get",bind_return_key=True),sg.Input(visible=False,enable_events=True,key="save_path"),sg.FolderBrowse("Save",disabled=True,key="folder",initial_folder=os.getcwd()),sg.ProgressBar(max_value=10,size=(5,10),key="prog",bar_color=("green","grey")),sg.Text("Thread:",size=(5,None)),sg.Text("unknown",key="thread_gui",size=(36,None),enable_events=True,text_color="white"),sg.Text("0:00/0:00",size=(9,None),key="time"),sg.Text("",key="saved",size=(6,None),text_color="lightgreen")]
 ]
 
@@ -101,6 +98,9 @@ while True:
     event, values = window.read()
     if event == sg.WIN_CLOSED:
         break
+    elif event == "img_gui":
+        if "player" in globals():
+            player.pause = not player.pause
     elif event == "get":
         window["get"].update(disabled=True)
         threading.Thread(target=get_random).start()
