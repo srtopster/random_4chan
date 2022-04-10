@@ -10,29 +10,35 @@ from PIL import Image
 
 #Choose your board list
 #Default all boards
-boards = ['3', 'a', 'aco', 'adv', 'an', 'b', 'bant', 'biz', 'c', 'cgl', 'ck', 'cm', 'co', 'd', 'diy', 'e', 'fa', 'fit', 'g', 'gd', 'gif', 'h', 'hc', 'his', 'hm', 'hr', 'i', 'ic', 'int', 'jp', 'k', 'lgbt', 'lit', 'm', 'mlp', 'mu', 'n', 'news', 'o', 'out', 'p', 'po', 'pol', 'pw', 'qa', 'qst', 'r', 'r9k', 's', 's4s', 'sci', 'soc', 'sp', 't', 'tg', 'toy', 'trash', 'trv', 'tv', 'u', 'v', 'vg', 'vip', 'vm', 'vmg', 'vp', 'vr', 'vrpg', 'vst', 'vt', 'w', 'wg', 'wsg', 'wsr', 'x', 'xs', 'y']
+boards = ["3", "a", "aco", "adv", "an", "b", "bant", "biz", "c", "cgl", "ck", "cm", "co", "d", "diy", "e", "fa", "fit", "g", "gd", "gif", "h", "hc", "his", "hm", "hr", "i", "ic", "int", "jp", "k", "lgbt", "lit", "m", "mlp", "mu", "n", "news", "o", "out", "p", "po", "pol", "pw", "qa", "qst", "r", "r9k", "s", "s4s", "sci", "soc", "sp", "t", "tg", "toy", "trash", "trv", "tv", "u", "v", "vg", "vip", "vm", "vmg", "vp", "vr", "vrpg", "vst", "vt", "w", "wg", "wsg", "wsr", "x", "xs", "y"]
 #Not gay board list 
-#boards = ["cm",'3', 'a', 'aco', 'adv', 'an', 'b', 'bant', 'biz', 'c', 'cgl', 'ck', 'co', 'd', 'diy', 'e', 'fa', 'fit', 'g', 'gd', 'gif', 'h', 'hc', 'his', 'hr', 'i', 'ic', 'int', 'jp', 'k', 'lgbt', 'lit', 'm', 'mlp', 'mu', 'n', 'news', 'o', 'out', 'p', 'po', 'pol', 'pw', 'qa', 'qst', 'r', 'r9k', 's', 's4s', 'sci', 'soc', 'sp', 't', 'tg', 'toy', 'trash', 'trv', 'tv', 'u', 'v', 'vg', 'vip', 'vm', 'vmg', 'vp', 'vr', 'vrpg', 'vst', 'vt', 'w', 'wg', 'wsg', 'wsr', 'x', 'xs']
+#boards = ["cm","3", "a", "aco", "adv", "an", "b", "bant", "biz", "c", "cgl", "ck", "co", "d", "diy", "e", "fa", "fit", "g", "gd", "gif", "h", "hc", "his", "hr", "i", "ic", "int", "jp", "k", "lgbt", "lit", "m", "mlp", "mu", "n", "news", "o", "out", "p", "po", "pol", "pw", "qa", "qst", "r", "r9k", "s", "s4s", "sci", "soc", "sp", "t", "tg", "toy", "trash", "trv", "tv", "u", "v", "vg", "vip", "vm", "vmg", "vp", "vr", "vrpg", "vst", "vt", "w", "wg", "wsg", "wsr", "x", "xs"]
 #Gif/webm only board list
 #boards = ["wsg","gif"]
 #SFW board list:
-#boards = ['3', 'a', 'adv', 'an', 'biz', 'c', 'cgl', 'ck', 'cm', 'co', 'diy', 'fa', 'fit', 'g', 'gd', 'his', 'int', 'jp', 'k', 'lgbt', 'lit', 'm', 'mlp', 'mu', 'n', 'news', 'o', 'out', 'p', 'po', 'pw', 'qa', 'qst', 'sci', 'sp', 'tg', 'toy', 'trv', 'tv', 'v', 'vg', 'vip', 'vm', 'vmg', 'vp', 'vr', 'vrpg', 'vst', 'vt', 'w', 'wsg', 'wsr', 'x', 'xs', 'y']
+#boards = ["3", "a", "adv", "an", "biz", "c", "cgl", "ck", "cm", "co", "diy", "fa", "fit", "g", "gd", "his", "int", "jp", "k", "lgbt", "lit", "m", "mlp", "mu", "n", "news", "o", "out", "p", "po", "pw", "qa", "qst", "sci", "sp", "tg", "toy", "trv", "tv", "v", "vg", "vip", "vm", "vmg", "vp", "vr", "vrpg", "vst", "vt", "w", "wsg", "wsr", "x", "xs", "y"]
 
 data = {"image":None,"thread":None,"filename":None}
 
 def webm_handler(file_bytes):
     global player
-    with open(".data","wb") as f:
-        f.write(file_bytes)
-    player = mpv.MPV(wid=window['img_gui'].Widget.winfo_id())
-    player.loop_playlist = 'inf'
-    @player.property_observer('time-pos')
+    video_bytes = io.BytesIO(file_bytes)
+    player = mpv.MPV(wid=window["img_gui"].Widget.winfo_id())
+    player.loop_playlist = "inf"
+    @player.property_observer("time-pos")
     def func_pos(_name, value):
         if value != None:
             m,s = divmod(int(value),60)
-            tm,ts = divmod(int(player.duration),60)
+            tm,ts = divmod(int(0 if player.duration == None else player.duration),60)
             window["time"].update("{}:{:02d}/{}:{:02d}".format(m,s,tm,ts))
-    player.play(".data")
+    @player.python_stream("video")
+    def reader():
+        while True:
+            chunk = video_bytes.read(1024*1024)
+            if chunk == b"":
+                video_bytes.seek(0,0)
+            yield chunk
+    player.play("python://video")
 
 def image_handler(file_bytes):
     thumb_bytes = io.BytesIO()
