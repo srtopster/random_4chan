@@ -5,8 +5,6 @@ import os
 import threading
 import webbrowser
 import mpv
-import time
-import keyboard
 import PySimpleGUI as sg
 from PIL import Image
 
