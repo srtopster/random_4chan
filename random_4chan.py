@@ -48,8 +48,10 @@ def image_handler(file_bytes):
     window["img_gui"].update(data=thumb_bytes.getvalue())
 
 def get_random():
+    global player
     if "player" in globals():
         player.terminate()
+        del player
         window["time"].update("0:00/0:00")
     imgs = []
     board = random.choice(boards)
